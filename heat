@@ -79,7 +79,6 @@ def print_version():
 if __name__ == '__main__':
     options = parse_args(sys.argv[1:])
     try:
-        # main(float(sys.argv[1]), float(sys.argv[2]))
         main(options['lower'], options['upper'])
     except KeyboardInterrupt:
         # The user has interrupted the program. Stop it without startling them
