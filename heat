@@ -7,7 +7,6 @@ __version__ = "0.1.0"
 def main(lower, upper):
     for line in lines(sys.stdin):
         sys.stdout.write(color_numbers(line, lower, upper))
-        # sys.stdout.write(line)
 
 def lines(file):
     while True:
@@ -28,32 +27,60 @@ def color(string, lower, upper):
     value = float(string)
     value = lower if value < lower else upper if upper < value else value
     percent = (value - lower) / (upper - lower)
-    r, g, b = rgb_from_hsv(120 - percent * 120, 1, 0.9)
-    # print r, g, b
-    r = int(r * 5)
-    g = int(g * 5)
-    b = int(b * 5)
-    # print r, g, b
+    r, g, b = fractional_rgb_from_hsv(120 - percent * 120, 1, 0.9)
+    r, g, b = rgb6_from_fractional_rgb(r, g, b)
     # This does grayscale
     # color = int(232 + percent * (255 - 232))
-    color = rgb_to_216_color(r, g, b) + 16
-    # print color
+    color = terminal_color_from_rgb6(r, g, b)
     return "\033[38;5;%dm%s\033[m" % (color, string)
 
-def rgb_from_hsv(h, s, v):
+def fractional_rgb_from_hsv(h, s, v):
     c = v * s
     h = h / 60.0
     x = c * 1 - abs(h % 2 - 1)
-    r, g, b = (c, x, 0) if 0 <= h < 1 else (x, c, 0) if 1 <= h < 2 else (0, c, x) if 2 <= h < 3 else (0, x, c) if 3 <= h < 4 else (x, 0, c) if 4 <= h < 5 else (c, 0, x) if 5 <= h < 6 else (0, 0, 0)
+    r, g, b = ((c, x, 0) if 0 <= h < 1 else (x, c, 0) if 1 <= h < 2 else
+        (0, c, x) if 2 <= h < 3 else (0, x, c) if 3 <= h < 4 else (x, 0, c)
+        if 4 <= h < 5 else (c, 0, x) if 5 <= h < 6 else (0, 0, 0))
     m = v - c
     return r + m, g + m, b + m
 
-def rgb_to_216_color(r, g, b):
-        return r * 36 + g * 6 + b
+def rgb6_from_fractional_rgb(r, g, b):
+    return int(r * 5), int(g * 5), int(b * 5)
+
+def terminal_color_from_rgb6(r, g, b):
+        return r * 36 + g * 6 + b + 16
+
+def parse_args(args):
+    if '-h' in args or '--help' in args:
+        print_usage(sys.stdout)
+        sys.exit(0)
+    if '-v' in args or '--version' in args:
+        print_version()
+        sys.exit(0)
+    if len(args) != 2:
+        print_usage(sys.stderr)
+        sys.exit(1)
+    options = {
+        'lower': float(args[0]),
+        'upper': float(args[1])
+    }
+    return options
+
+def print_usage(output):
+    output.write("""Usage: %s <lower> <upper>
+
+Color numbers in standard input based on their position within the specified
+range.
+""" % sys.argv[0])
+
+def print_version():
+    sys.stdout.write("Heat version %s\n" % __version__)
 
 if __name__ == '__main__':
+    options = parse_args(sys.argv[1:])
     try:
-        main(float(sys.argv[1]), float(sys.argv[2]))
+        # main(float(sys.argv[1]), float(sys.argv[2]))
+        main(options['lower'], options['upper'])
     except KeyboardInterrupt:
         # The user has interrupted the program. Stop it without startling them
         # with a stack trace.
